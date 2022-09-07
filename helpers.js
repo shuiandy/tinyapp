@@ -1,7 +1,7 @@
 const generateRandomString = (number) => {
   let result = '';
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < number; i++) {
+  for (let i = 0; i < number; i += 1) {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return result;
@@ -28,9 +28,28 @@ const getUserDatabase = (urlDatabase, userID) => {
 };
 
 const getUserInfo = (session, users) => {
-  const userId = session.user_id;
-  const userEmail = users[userId] ? users[userId].email : undefined;
-  return { userId: userId, username: userEmail };
+  const userId = session ? session.user_id : undefined;
+  const username = users[userId] ? users[userId].email : undefined;
+  return { userId, username };
 };
 
-module.exports = { generateRandomString, getUserByEmail, getUserDatabase, getUserInfo };
+const checkUserPermission = (req, urlDatabase) => {
+  if (!(req.session && req.session.user_id)) {
+    return { status: 401, send: 'Please log in first!', permission: false };
+  }
+  if (!urlDatabase[req.params.id]) {
+    return { status: 404, send: 'ID does not exist!', permission: false };
+  }
+  if (urlDatabase[req.params.id].userID !== req.session.user_id) {
+    return { status: 401, send: 'You do not own this URL!', permission: false };
+  }
+  return { status: 200, send: '', permission: true };
+};
+
+module.exports = {
+  generateRandomString,
+  getUserByEmail,
+  getUserDatabase,
+  getUserInfo,
+  checkUserPermission,
+};

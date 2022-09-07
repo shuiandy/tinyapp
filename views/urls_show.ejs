@@ -20,21 +20,21 @@
         <p class="card-text">Short URL ID: <a href="/u/<%= id %>"><%= id %></a></p>
       </div>
       <div class="card-footer text-muted">
-          <h3 class="'card-title">Edit</h3>
-              <form class="form-inline flex-column" method="POST" action="/urls/<%= id %>/edit">
-                <dev class="form-group mb-2">
-                  <Label for="editURL">New URL:</Label>
-                  <input
-                    class="form-control"
-                    type="text"
-                    name="longURL"
-                    placeholder="http://"
-                    style="width: 300px; margin: 1em"
-                  />
-                  <button type="submit" class="btn btn-primary">Submit</button>
-                </dev>
-              </form>
-          </div>
+        <h3 class="'card-title">Edit</h3>
+        <form class="form-inline flex-column" method="POST" action="/urls/<%= id %>?_method=PUT">
+          <dev class="form-group mb-2">
+            <Label for="editURL">New URL:</Label>
+            <input
+              class="form-control"
+              type="text"
+              name="longURL"
+              placeholder="http://"
+              style="width: 300px; margin: 1em"
+            />
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </dev>
+        </form>
+      </div>
     </div>
     <!-- Bootstrap JS -->
     <script
