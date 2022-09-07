@@ -8,8 +8,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.set('view engine', 'ejs');
 const urlDatabase = {
-  b2xVn2: 'http://www.lighthouselabs.ca',
-  '9sm5xK': 'http://www.google.com',
+  b6UTxQ: {
+    longURL: 'https://www.tsn.ca',
+    userID: 'aJ48lW',
+  },
+  i3BoGr: {
+    longURL: 'https://www.google.ca',
+    userID: 'aJ48lW',
+  },
 };
 
 const users = {};
@@ -32,26 +38,45 @@ const getUserByEmail = (email) => {
   return result;
 };
 
+const getUserDatabase = (userID) => {
+  const result = {};
+  Object.keys(urlDatabase).forEach((key) => {
+    if (urlDatabase[key].userID === userID) {
+      result[key] = urlDatabase[key].longURL;
+    }
+  });
+  return result;
+};
+
 app.get('/', (req, res) => {
   res.redirect('/urls');
 });
 
 app.get('/urls', (req, res) => {
+  if (req.cookies.user_id && !users[req.cookies.user_id]) {
+    res.clearCookie('user_id');
+    req.cookies = {};
+  }
   const userEmail = req.cookies.user_id ? users[req.cookies.user_id].email : undefined;
-  const databaseVars = { urls: urlDatabase, username: userEmail };
+  const databaseVars = { urls: getUserDatabase(req.cookies.user_id), username: userEmail };
   res.render('urls_index', databaseVars);
 });
 
 app.post('/urls', (req, res) => {
+  const userLogin = !!(req.cookies.user_id && users[req.cookies.user_id]);
+  if (!userLogin) {
+    res.status(401).send('Please login to use ShortURL!');
+    return;
+  }
   const stringKey = generateRandomString(6);
-  console.log(stringKey);
-  urlDatabase[stringKey] = req.body.longURL;
+  urlDatabase[stringKey] = { longURL: req.body.longURL, userID: req.cookies.user_id };
   res.redirect('/urls');
 });
 
 app.get('/urls/new', (req, res) => {
   if (!req.cookies.user_id) {
-    res.redirect(301, '/login');
+    res.redirect(302, '/login');
+    return;
   }
   const userId = req.cookies.user_id;
   const userEmail = users[userId] ? users[userId].email : undefined;
@@ -62,32 +87,60 @@ app.get('/urls/new', (req, res) => {
 app.get('/urls/:id', (req, res) => {
   const userId = req.cookies.user_id;
   const userEmail = users[userId] ? users[userId].email : undefined;
-  // const userId = getUserByEmail(req.body.email);
-
+  const userDatabase = getUserDatabase(req.cookies.user_id);
   const templateVars = {
     id: req.params.id,
-    longURL: urlDatabase[req.params.id],
+    longURL: userDatabase[req.params.id],
     username: userEmail,
   };
   res.render('urls_show', templateVars);
 });
 
 app.post('/urls/:id', (req, res) => {
-  res.redirect(`/urls/${req.params.id}`);
+  if (!(req.cookies && req.cookies.user_id)) {
+    res.status(401).send('Please log in first!');
+  } else if (!urlDatabase[req.params.id]) {
+    res.status(404).send('ID does not exist!');
+  } else if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
+    res.status(401).send('You do not own this URL!');
+  } else {
+    res.redirect(`/urls/${req.params.id}`);
+  }
 });
 
 app.get('/u/:id', (req, res) => {
-  res.redirect(urlDatabase[req.params.id]);
+  if (!urlDatabase[req.params.id]) {
+    res.status(404).send('No URL record in database!');
+    return;
+  }
+  const userDatabase = getUserDatabase(req.cookies.user_id);
+  res.redirect(userDatabase[req.params.id]);
 });
 
 app.post('/urls/:id/edit', (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
-  res.redirect('/urls');
+  if (!(req.cookies && req.cookies.user_id)) {
+    res.status(401).send('Please log in first!');
+  } else if (!urlDatabase[req.params.id]) {
+    res.status(404).send('ID does not exist!');
+  } else if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
+    res.status(401).send('You do not own this URL!');
+  } else {
+    urlDatabase[req.params.id].longURL = req.body.longURL;
+    res.redirect('/urls');
+  }
 });
 
 app.post('/urls/:id/delete', (req, res) => {
-  delete urlDatabase[req.params.id];
-  res.redirect('/urls');
+  if (!(req.cookies && req.cookies.user_id)) {
+    res.status(401).send('Please log in first!');
+  } else if (!urlDatabase[req.params.id]) {
+    res.status(404).send('ID does not exist!');
+  } else if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
+    res.status(401).send('You do not own this URL!');
+  } else {
+    delete urlDatabase[req.params.id];
+    res.redirect('/urls');
+  }
 });
 
 app.post('/login', (req, res) => {
@@ -105,6 +158,9 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
+  if (req.cookies && req.cookies.user_id) {
+    res.redirect('/urls');
+  }
   const userId = req.cookies.user_id;
   const userEmail = users[userId] ? users[userId].email : undefined;
   const variables = { username: userEmail };
@@ -116,6 +172,10 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
+  if (req.cookies && req.cookies.user_id) {
+    res.redirect('/urls');
+    return;
+  }
   const userInfo = { username: req.cookies.username };
   res.render('new_user', userInfo);
 });
