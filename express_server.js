@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   cookieSession({
     name: 'session',
-    keys: ['test'],
+    keys: ['mq9hDxBVDbspDR6n'], // secret key should not be hard-coded, but it's fine for this project
     maxAge: 24 * 60 * 60 * 1000,
   })
 );
@@ -31,10 +31,12 @@ const users = {};
 app.get('/', (req, res) => res.redirect('/urls'));
 
 app.get('/urls', (req, res) => {
+  // check if a user has a cookie but it's not in the database
   if (!req.session.user_id || (req.session.user_id && !users[req.session.user_id])) {
     req.session = null;
     return res.redirect('/login');
   }
+  // put NULL value if the user is not logged in to prevent our function not to crash
   const userInfo = getUserInfo(req.session === null ? null : req.session, users);
   const databaseVars = {
     urls: getUserDatabase(urlDatabase, req.session ? req.session.user_id : null),
@@ -66,9 +68,11 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
+  // redirect to the main page if a user has logged in
   if (req.session && req.session.user_id) {
     return res.redirect('/urls');
   }
+
   const userInfo = getUserInfo('', users);
   return res.render('login_page', userInfo);
 });
@@ -79,9 +83,11 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
+  // redirect to the main page if a user has logged in
   if (req.session && req.session.user_id) {
     return res.redirect('/urls');
   }
+
   const userInfo = { username: req.session.username };
   return res.render('new_user', userInfo);
 });
@@ -93,6 +99,7 @@ app.post('/register', (req, res) => {
   if (getUserByEmail(users, req.body.email)) {
     return res.sendStatus(400).send('Email address exists!');
   }
+
   const userID = generateRandomString(6);
   users[userID] = {
     id: userID,
@@ -104,6 +111,7 @@ app.post('/register', (req, res) => {
 });
 
 app.get('/urls/new', (req, res) => {
+  // redirect to login page if the user is not logged in
   if (!req.session.user_id) {
     return res.redirect('/login');
   }
