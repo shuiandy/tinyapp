@@ -3,6 +3,8 @@ const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
 const methodOverride = require('method-override');
 const {
+  urlDatabase,
+  users,
   getUserByEmail,
   getUserDatabase,
   generateRandomString,
@@ -26,23 +28,27 @@ app.use(
 
 app.use(methodOverride('_method'));
 app.set('view engine', 'ejs');
-const urlDatabase = {};
-
-const users = {};
 
 // let /urls decide where should be redirected
-app.get('/', (req, res) => res.redirect('/urls'));
+app.get('/', (req, res) => {
+  if (!req.session.user_id || (req.session.user_id && !users[req.session.user_id])) {
+    req.session = null;
+    res.redirect('/login');
+  } else {
+    res.redirect('/urls');
+  }
+});
 
 app.get('/urls', (req, res) => {
   // check if a user has a cookie but it's not in the database
   // if a user does not have a cookie, redirect to login page
   if (!req.session.user_id || (req.session.user_id && !users[req.session.user_id])) {
-    req.session.user_id = null;
-    return res.redirect('/login');
+    req.session = null;
+    return res.status(401).send('<h1><center>Please log in first</center></h1>');
   }
   // pass the user info and user data to header
-  const userInfo = getUserInfo(req.session, users);
-  const userData = getUserDatabase(urlDatabase, req.session.user_id);
+  const userInfo = getUserInfo(req.session);
+  const userData = getUserDatabase(req.session.user_id);
 
   const databaseVars = {
     urls: userData,
@@ -57,7 +63,7 @@ app.get('/urls/new', (req, res) => {
     return res.redirect('/login');
   }
 
-  const userInfo = getUserInfo(req.session, users);
+  const userInfo = getUserInfo(req.session);
   return res.render('urls_new', userInfo);
 });
 
@@ -65,13 +71,13 @@ app.get('/urls/:id', (req, res) => {
   // check if user is authenticated
   // it can also check if a shorted URL existed
   // it can alsooo check if a shorted URL is belong to the current user
-  const permission = checkUserPermission(req, urlDatabase);
+  const permission = checkUserPermission(req);
   if (!permission.permission) {
     return res.status(permission.status).send(permission.send);
   }
 
-  const userInfo = getUserInfo(req.session, users);
-  const userDatabase = getUserDatabase(urlDatabase, req.session.user_id);
+  const userInfo = getUserInfo(req.session);
+  const userDatabase = getUserDatabase(req.session.user_id);
   const urlData = userDatabase[req.params.id];
   const userVariables = {
     id: req.params.id,
@@ -120,12 +126,12 @@ app.post('/urls', (req, res) => {
     visitors: {},
     uniqueVisitors: 0,
   };
-  return res.redirect('/urls');
+  return res.redirect(`/urls/${stringKey}`);
 });
 
 app.post('/urls/:id', (req, res) => {
   // check if user is authenticated
-  const permission = checkUserPermission(req, urlDatabase);
+  const permission = checkUserPermission(req);
   if (!permission.permission) {
     return res.status(permission.status).send(permission.send);
   }
@@ -135,7 +141,7 @@ app.post('/urls/:id', (req, res) => {
 
 app.put('/urls/:id', (req, res) => {
   // check if user is authenticated
-  const permission = checkUserPermission(req, urlDatabase);
+  const permission = checkUserPermission(req);
   if (!permission.permission) {
     return res.status(permission.status).send(permission.send);
   }
@@ -146,7 +152,7 @@ app.put('/urls/:id', (req, res) => {
 
 app.delete('/urls/:id', (req, res) => {
   // check if user is authenticated
-  const permission = checkUserPermission(req, urlDatabase);
+  const permission = checkUserPermission(req);
   if (!permission.permission) {
     return res.status(permission.status).send(permission.send);
   }
@@ -162,7 +168,7 @@ app.get('/login', (req, res) => {
   }
 
   // we didn't login, so user info should be empty
-  const userInfo = getUserInfo('', users);
+  const userInfo = getUserInfo('');
   return res.render('login_page', userInfo);
 });
 
@@ -177,7 +183,7 @@ app.get('/register', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-  const userID = getUserByEmail(users, req.body.email);
+  const userID = getUserByEmail(req.body.email);
 
   // authentication codes
   if (!users[userID]) {
@@ -196,7 +202,7 @@ app.post('/register', (req, res) => {
   if (!req.body.email || !req.body.password) {
     return res.status(400).send('<h1><center>Please fill in your email or password.</center></h1>');
   }
-  if (getUserByEmail(users, req.body.email)) {
+  if (getUserByEmail(req.body.email)) {
     return res.status(400).send('<h1><center>Email address exists!</center></h1>');
   }
   // generate random userID
@@ -211,8 +217,8 @@ app.post('/register', (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
-  req.session = null;
-  return res.redirect('/urls');
+  res.clearCookie('session');
+  return res.redirect('/');
 });
 
 app.listen(PORT, () => {
