@@ -28,7 +28,7 @@ const checkUserPermission = (req, urlDatabase) => {
     return { status: 401, send: 'Please log in first!', permission: false };
   }
   if (!urlDatabase[req.params.id]) {
-    return { status: 404, send: 'ID does not exist!', permission: false };
+    return { status: 404, send: 'URL does not exist!', permission: false };
   }
   if (urlDatabase[req.params.id].userID !== req.session.user_id) {
     return { status: 401, send: 'You do not own this URL!', permission: false };
