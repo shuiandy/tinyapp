@@ -8,6 +8,8 @@ const {
   generateRandomString,
   getUserInfo,
   checkUserPermission,
+  timeConverter,
+  countUniqueVisitors,
 } = require('./helpers');
 
 const app = express();
@@ -33,7 +35,7 @@ app.get('/', (req, res) => res.redirect('/urls'));
 app.get('/urls', (req, res) => {
   // check if a user has a cookie but it's not in the database
   if (!req.session.user_id || (req.session.user_id && !users[req.session.user_id])) {
-    req.session = null;
+    req.session.user_id = null;
     return res.redirect('/login');
   }
   // put NULL value if the user is not logged in to prevent our function not to crash
@@ -51,7 +53,12 @@ app.post('/urls', (req, res) => {
     return res.status(401).send('Please login to use ShortURL!');
   }
   const stringKey = generateRandomString(6);
-  urlDatabase[stringKey] = { longURL: req.body.longURL, userID: req.session.user_id };
+  urlDatabase[stringKey] = {
+    longURL: req.body.longURL,
+    userID: req.session.user_id,
+    visits: 0,
+    visitors: {},
+  };
   return res.redirect('/urls');
 });
 
@@ -94,10 +101,10 @@ app.get('/register', (req, res) => {
 
 app.post('/register', (req, res) => {
   if (!req.body.email || !req.body.password) {
-    return res.sendStatus(400).send('Please fill in your email or password.');
+    return res.sendStatus(400).send('<h1>Please fill in your email or password.</h1>');
   }
   if (getUserByEmail(users, req.body.email)) {
-    return res.sendStatus(400).send('Email address exists!');
+    return res.sendStatus(400).send('<h1>Email address exists!</h1>');
   }
 
   const userID = generateRandomString(6);
@@ -149,10 +156,14 @@ app.get('/urls/:id', (req, res) => {
 
   const userInfo = getUserInfo(req.session, users);
   const userDatabase = getUserDatabase(urlDatabase, req.session.user_id);
+  const uniqueVisitors = countUniqueVisitors(req.params.id, urlDatabase);
   const templateVars = {
     id: req.params.id,
     longURL: userDatabase[req.params.id],
     username: userInfo.username,
+    visits: urlDatabase[req.params.id].visits,
+    visitors: urlDatabase[req.params.id].visitors,
+    uniqueVisitors,
   };
   return res.render('urls_show', templateVars);
 });
@@ -171,9 +182,17 @@ app.get('/u/:id', (req, res) => {
   if (!urlDatabase[req.params.id]) {
     return res.status(404).send('No URL record in database!');
   }
+  // analytics function
+  const timestamp = timeConverter(Math.floor(Date.now() / 1000));
+  const visitorID = req.session.visitorID ? req.session.visitorID : generateRandomString(6);
+  if (!req.session.visitorID) {
+    req.session.visitorID = visitorID;
+  }
+  const urlInfo = urlDatabase[req.params.id];
+  urlInfo.visits += 1;
+  urlInfo.visitors[urlInfo.visits] = { visitorID: visitorID, timestamp: timestamp };
 
-  const userDatabase = getUserDatabase(urlDatabase, req.session.user_id);
-  return res.redirect(userDatabase[req.params.id]);
+  return res.redirect(urlInfo.longURL);
 });
 
 app.listen(PORT, () => {
