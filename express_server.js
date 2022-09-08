@@ -5,6 +5,7 @@ const methodOverride = require('method-override');
 const {
   urlDatabase,
   users,
+  checkLoginStatus,
   getUserByEmail,
   getUserDatabase,
   generateRandomString,
@@ -31,7 +32,7 @@ app.set('view engine', 'ejs');
 
 app.get('/', (req, res) => {
   // if user not logged in, redirect to login page
-  if (!req.session.user_id || (req.session.user_id && !users[req.session.user_id])) {
+  if (!checkLoginStatus(req.session)) {
     req.session = null;
     res.redirect('/login');
   } else {
@@ -43,7 +44,7 @@ app.get('/', (req, res) => {
 app.get('/urls', (req, res) => {
   // check if a user has a cookie but it's not in the database
   // if a user does not have a cookie, redirect to login page
-  if (!req.session.user_id || (req.session.user_id && !users[req.session.user_id])) {
+  if (!checkLoginStatus(req.session)) {
     req.session = null;
     return res.status(401).send('<h1><center>Please log in first</center></h1>');
   }
@@ -60,7 +61,7 @@ app.get('/urls', (req, res) => {
 
 app.get('/urls/new', (req, res) => {
   // redirect to login page if the user is not logged in
-  if (!req.session.user_id) {
+  if (!checkLoginStatus(req.session)) {
     return res.redirect('/login');
   }
 
@@ -112,8 +113,7 @@ app.get('/u/:id', (req, res) => {
 
 app.post('/urls', (req, res) => {
   // unauthorized user should not use the service
-  const userLogin = !!(req.session.user_id && users[req.session.user_id]);
-  if (!userLogin) {
+  if (!checkLoginStatus(req.session)) {
     return res.status(401).send('<h1><center>Please login to use ShortURL!</center></h1>');
   }
   const stringKey = generateRandomString(6);
@@ -154,7 +154,7 @@ app.delete('/urls/:id', (req, res) => {
 
 app.get('/login', (req, res) => {
   // redirect to the main page if a user has logged in
-  if (req.session && req.session.user_id) {
+  if (checkLoginStatus(req.session)) {
     return res.redirect('/urls');
   }
 
@@ -165,7 +165,7 @@ app.get('/login', (req, res) => {
 
 app.get('/register', (req, res) => {
   // redirect to the main page if a user has logged in
-  if (req.session && req.session.user_id) {
+  if (checkLoginStatus(req.session)) {
     return res.redirect('/urls');
   }
 

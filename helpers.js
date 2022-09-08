@@ -1,6 +1,8 @@
 const urlDatabase = {};
 const users = {};
 
+const checkLoginStatus = (session) => !!(session && session.user_id);
+
 const generateRandomString = (number) => {
   let result = '';
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -27,7 +29,7 @@ const getUserInfo = (session) => {
 };
 
 const checkUserPermission = (req) => {
-  if (!(req.session && req.session.user_id)) {
+  if (!checkLoginStatus(req.session)) {
     return {
       status: 401,
       send: '<h1><center>Please log in first!</center></h1>',
@@ -109,6 +111,7 @@ const timeConverter = (timestamp) => {
 module.exports = {
   urlDatabase,
   users,
+  checkLoginStatus,
   generateRandomString,
   getUserByEmail,
   getUserDatabase,
