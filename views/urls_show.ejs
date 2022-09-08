@@ -18,6 +18,9 @@
       <div class="card-body">
         <h5 class="card-title">TinyURL for: <%= longURL %></h5>
         <p class="card-text">Short URL ID: <a href="/u/<%= id %>"><%= id %></a></p>
+        <p class="card-text">Date Created: <%= createTime %></p>
+        <p class="card-text">Total Visits: <%= visits %></p>
+        <p class="card-text">Unique Visitors: <%= uniqueVisitors %></p>
       </div>
       <div class="card-footer text-muted">
         <h3 class="'card-title">Edit</h3>
@@ -34,31 +37,6 @@
             <button type="submit" class="btn btn-primary">Submit</button>
           </dev>
         </form>
-      </div>
-    </div>
-    <div class="card mx-auto text-bg-secrondary" style="width: 75%">
-      <div class="card-header text-center font-weight-bold">
-        <div class="card-text"> Total visits: <%= visits %> </div>  
-        <div class="card-text"> Unique vistors: <%= uniqueVisitors %> </div>
-      <div class="card-body">
-        <table class="table text-center">
-          <thead class="table-light">
-            <tr>
-              <th scope="col">#</th>
-              <th scope="col">Visitor ID</th>
-              <th scope="col">Visit time</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% for (let i in visitors) { %>
-            <tr>
-              <th scope="row"><%= i %></th>
-              <td><%= visitors[i].visitorID %></td>
-              <td><%= visitors[i].timestamp %></td>
-            </tr>
-            <% } %>
-          </tbody>
-        </table>
       </div>
     </div>
     <!-- Bootstrap JS -->

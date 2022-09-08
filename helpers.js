@@ -17,16 +17,6 @@ const getUserByEmail = (users, email) => {
   return result;
 };
 
-const getUserDatabase = (urlDatabase, userID) => {
-  const result = {};
-  Object.keys(urlDatabase).forEach((key) => {
-    if (urlDatabase[key].userID === userID) {
-      result[key] = urlDatabase[key].longURL;
-    }
-  });
-  return result;
-};
-
 const getUserInfo = (session, users) => {
   const userId = session ? session.user_id : undefined;
   const username = users[userId] ? users[userId].email : undefined;
@@ -49,11 +39,28 @@ const checkUserPermission = (req, urlDatabase) => {
 const countUniqueVisitors = (id, urlDatabase) => {
   const visitors = new Set();
   let result = 0;
+
   Object.keys(urlDatabase[id].visitors).forEach((key) => {
     const visitor = urlDatabase[id].visitors[key].visitorID;
     if (!visitors.has(visitor)) {
       result += 1;
       visitors.add(visitor);
+    }
+  });
+  return result;
+};
+
+const getUserDatabase = (urlDatabase, userID) => {
+  const result = {};
+  Object.keys(urlDatabase).forEach((key) => {
+    const userData = urlDatabase[key];
+    if (urlDatabase[key].userID === userID) {
+      result[key] = {
+        longURL: userData.longURL,
+        createTime: userData.createTime,
+        visits: userData.visits,
+        uniqueVisitors: userData.uniqueVisitors,
+      };
     }
   });
   return result;
