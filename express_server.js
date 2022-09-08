@@ -40,9 +40,7 @@ app.get('/urls', (req, res) => {
     req.session.user_id = null;
     return res.redirect('/login');
   }
-  // put NULL value if the user is not logged in to make sure our function not to crash
-  // why the analytics stretch instructions didn't told me to put these value on this page?
-  // const userInfo = getUserInfo(req.session === null ? null : req.session, users);
+  // pass the user info and user data to header
   const userInfo = getUserInfo(req.session, users);
   const userData = getUserDatabase(urlDatabase, req.session.user_id);
 
@@ -73,15 +71,15 @@ app.get('/urls/:id', (req, res) => {
 
   const userInfo = getUserInfo(req.session, users);
   const userDatabase = getUserDatabase(urlDatabase, req.session.user_id);
-  const urlID = req.params.id;
+  const urlData = userDatabase[req.params.id];
   const userVariables = {
-    id: urlID,
-    longURL: userDatabase[urlID].longURL,
+    id: req.params.id,
+    longURL: urlData.longURL,
     username: userInfo.username,
-    visits: userDatabase[urlID].visits,
-    createTime: userDatabase[urlID].createTime,
-    visitors: userDatabase[urlID].visitors,
-    uniqueVisitors: userDatabase[urlID].uniqueVisitors,
+    visits: urlData.visits,
+    createTime: urlData.createTime,
+    visitors: urlData.visitors,
+    uniqueVisitors: urlData.uniqueVisitors,
   };
   return res.render('urls_show', userVariables);
 });
@@ -163,6 +161,7 @@ app.get('/login', (req, res) => {
     return res.redirect('/urls');
   }
 
+  // we didn't login, so user info should be empty
   const userInfo = getUserInfo('', users);
   return res.render('login_page', userInfo);
 });
@@ -179,6 +178,8 @@ app.get('/register', (req, res) => {
 
 app.post('/login', (req, res) => {
   const userID = getUserByEmail(users, req.body.email);
+
+  // authentication codes
   if (!users[userID]) {
     return res.status(403).send('<h1>User not found!</h1>');
   }
