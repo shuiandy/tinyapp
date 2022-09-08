@@ -29,12 +29,13 @@ app.use(
 app.use(methodOverride('_method'));
 app.set('view engine', 'ejs');
 
-// let /urls decide where should be redirected
 app.get('/', (req, res) => {
+  // if user not logged in, redirect to login page
   if (!req.session.user_id || (req.session.user_id && !users[req.session.user_id])) {
     req.session = null;
     res.redirect('/login');
   } else {
+    // if user logged in, redirect to urls page
     res.redirect('/urls');
   }
 });
