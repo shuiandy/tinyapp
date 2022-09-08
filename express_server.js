@@ -64,6 +64,7 @@ app.get('/urls/new', (req, res) => {
 app.get('/urls/:id', (req, res) => {
   // check if user is authenticated
   // it can also check if a shorted URL existed
+  // it can alsooo check if a shorted URL is belong to the current user
   const permission = checkUserPermission(req, urlDatabase);
   if (!permission.permission) {
     return res.status(permission.status).send(permission.send);
@@ -86,18 +87,17 @@ app.get('/urls/:id', (req, res) => {
 
 app.get('/u/:id', (req, res) => {
   if (!urlDatabase[req.params.id]) {
-    return res.status(404).send('<h1> No URL record in database!</h1>');
+    return res.status(404).send('<h1><center> ID does not exist!</center></h1>');
   }
   // analytics function
-  const timestamp = timeConverter(Math.floor(Date.now() / 1000));
   const visitorID = req.session.visitorID ? req.session.visitorID : generateRandomString(6);
   if (!req.session.visitorID) {
     req.session.visitorID = visitorID;
   }
-  // update unique visitors here
+  // update visitor analytics here
   const urlInfo = urlDatabase[req.params.id];
   urlInfo.visits += 1;
-  urlInfo.visitors[urlInfo.visits] = { visitorID: visitorID, timestamp: timestamp };
+  urlInfo.visitors[urlInfo.visits] = { visitorID };
   urlInfo.uniqueVisitors = countUniqueVisitors(req.params.id, urlDatabase);
 
   return res.redirect(urlInfo.longURL);
@@ -107,7 +107,7 @@ app.post('/urls', (req, res) => {
   // unauthorized user should not use the service
   const userLogin = !!(req.session.user_id && users[req.session.user_id]);
   if (!userLogin) {
-    return res.status(401).send('Please login to use ShortURL!');
+    return res.status(401).send('<h1><center>Please login to use ShortURL!</center></h1>');
   }
   const stringKey = generateRandomString(6);
   const timestamp = timeConverter(Math.floor(Date.now() / 1000));
@@ -181,10 +181,10 @@ app.post('/login', (req, res) => {
 
   // authentication codes
   if (!users[userID]) {
-    return res.status(403).send('<h1>User not found!</h1>');
+    return res.status(403).send('<h1><center>User not found!</center></h1>');
   }
   if (!bcrypt.compareSync(req.body.password, users[userID].password)) {
-    return res.status(403).send('<h1>Invaild password!</h1>');
+    return res.status(403).send('<h1><center>Invaild password!</center></h1>');
   }
 
   req.session.user_id = userID;
@@ -194,10 +194,10 @@ app.post('/login', (req, res) => {
 app.post('/register', (req, res) => {
   // error handling
   if (!req.body.email || !req.body.password) {
-    return res.status(400).send('<h1>Please fill in your email or password.</h1>');
+    return res.status(400).send('<h1><center>Please fill in your email or password.</center></h1>');
   }
   if (getUserByEmail(users, req.body.email)) {
-    return res.status(400).send('<h1>Email address exists!</h1>');
+    return res.status(400).send('<h1><center>Email address exists!</center></h1>');
   }
   // generate random userID
   const userID = generateRandomString(6);

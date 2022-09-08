@@ -25,13 +25,25 @@ const getUserInfo = (session, users) => {
 
 const checkUserPermission = (req, urlDatabase) => {
   if (!(req.session && req.session.user_id)) {
-    return { status: 401, send: 'Please log in first!', permission: false };
+    return {
+      status: 401,
+      send: '<h1><center>Please log in first!</center></h1>',
+      permission: false,
+    };
   }
   if (!urlDatabase[req.params.id]) {
-    return { status: 404, send: 'URL does not exist!', permission: false };
+    return {
+      status: 404,
+      send: '<h1><center>URL does not exist!</center></h1>',
+      permission: false,
+    };
   }
   if (urlDatabase[req.params.id].userID !== req.session.user_id) {
-    return { status: 401, send: 'You do not own this URL!', permission: false };
+    return {
+      status: 401,
+      send: '<h1><center>You do not own this URL!</center></h1>',
+      permission: false,
+    };
   }
   return { status: 200, send: '', permission: true };
 };
