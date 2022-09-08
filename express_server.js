@@ -130,16 +130,6 @@ app.post('/urls', (req, res) => {
   return res.redirect(`/urls/${stringKey}`);
 });
 
-app.post('/urls/:id', (req, res) => {
-  // check if user is authenticated
-  const permission = checkUserPermission(req);
-  if (!permission.permission) {
-    return res.status(permission.status).send(permission.send);
-  }
-
-  return res.redirect(`/urls/${req.params.id}`);
-});
-
 app.put('/urls/:id', (req, res) => {
   // check if user is authenticated
   const permission = checkUserPermission(req);
