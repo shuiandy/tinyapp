@@ -48,6 +48,7 @@ app.get('/urls', (req, res) => {
 });
 
 app.post('/urls', (req, res) => {
+  // unauthorized user should not use the service
   const userLogin = !!(req.session.user_id && users[req.session.user_id]);
   if (!userLogin) {
     return res.status(401).send('Please login to use ShortURL!');
@@ -70,6 +71,7 @@ app.post('/login', (req, res) => {
   if (!bcrypt.compareSync(req.body.password, users[userID].password)) {
     return res.status(403).send('Invaild password!');
   }
+
   req.session.user_id = userID;
   return res.redirect('/urls');
 });
@@ -100,13 +102,14 @@ app.get('/register', (req, res) => {
 });
 
 app.post('/register', (req, res) => {
+  // error handling
   if (!req.body.email || !req.body.password) {
     return res.sendStatus(400).send('<h1>Please fill in your email or password.</h1>');
   }
   if (getUserByEmail(users, req.body.email)) {
     return res.sendStatus(400).send('<h1>Email address exists!</h1>');
   }
-
+  // generate random userID
   const userID = generateRandomString(6);
   users[userID] = {
     id: userID,
@@ -133,6 +136,7 @@ app.put('/urls/:id', (req, res) => {
   if (!permission.permission) {
     return res.status(permission.status).send(permission.send);
   }
+
   urlDatabase[req.params.id].longURL = req.body.longURL;
   return res.redirect('/urls');
 });
@@ -157,7 +161,7 @@ app.get('/urls/:id', (req, res) => {
   const userInfo = getUserInfo(req.session, users);
   const userDatabase = getUserDatabase(urlDatabase, req.session.user_id);
   const uniqueVisitors = countUniqueVisitors(req.params.id, urlDatabase);
-  const templateVars = {
+  const userVariables = {
     id: req.params.id,
     longURL: userDatabase[req.params.id],
     username: userInfo.username,
@@ -165,7 +169,7 @@ app.get('/urls/:id', (req, res) => {
     visitors: urlDatabase[req.params.id].visitors,
     uniqueVisitors,
   };
-  return res.render('urls_show', templateVars);
+  return res.render('urls_show', userVariables);
 });
 
 app.post('/urls/:id', (req, res) => {
