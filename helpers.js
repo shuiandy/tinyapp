@@ -1,3 +1,6 @@
+const urlDatabase = {};
+const users = {};
+
 const generateRandomString = (number) => {
   let result = '';
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -7,7 +10,7 @@ const generateRandomString = (number) => {
   return result;
 };
 
-const getUserByEmail = (users, email) => {
+const getUserByEmail = (email) => {
   let result = '';
   Object.keys(users).forEach((key) => {
     if (users[key].email === email) {
@@ -17,13 +20,13 @@ const getUserByEmail = (users, email) => {
   return result;
 };
 
-const getUserInfo = (session, users) => {
+const getUserInfo = (session) => {
   const userId = session ? session.user_id : undefined;
   const username = users[userId] ? users[userId].email : undefined;
   return { userId, username };
 };
 
-const checkUserPermission = (req, urlDatabase) => {
+const checkUserPermission = (req) => {
   if (!(req.session && req.session.user_id)) {
     return {
       status: 401,
@@ -48,7 +51,7 @@ const checkUserPermission = (req, urlDatabase) => {
   return { status: 200, send: '', permission: true };
 };
 
-const countUniqueVisitors = (id, urlDatabase) => {
+const countUniqueVisitors = (id) => {
   const visitors = new Set();
   let result = 0;
 
@@ -62,7 +65,7 @@ const countUniqueVisitors = (id, urlDatabase) => {
   return result;
 };
 
-const getUserDatabase = (urlDatabase, userID) => {
+const getUserDatabase = (userID) => {
   const result = {};
   Object.keys(urlDatabase).forEach((key) => {
     const userData = urlDatabase[key];
@@ -104,6 +107,8 @@ const timeConverter = (timestamp) => {
 };
 
 module.exports = {
+  urlDatabase,
+  users,
   generateRandomString,
   getUserByEmail,
   getUserDatabase,
